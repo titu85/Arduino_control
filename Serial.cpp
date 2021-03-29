@@ -1,6 +1,10 @@
 #include "Serial.h"
 #include <stdio.h>
 #include <ctype.h>
+#include <fstream>
+#include <iostream>
+#include <vector>
+#include <string>
 
 HANDLE my;
 
@@ -279,7 +283,7 @@ void SerialPutArray(HANDLE *hComm,float number_array[],int num,int echo) {
     if (echo) {
       printf("Sending = %lf %d \n",number_array[i],int_var);
     }
-    sprintf(outline,"H:%08x ",int_var);
+    sprintf(outline,"H:%08x \0",int_var);
     if (echo) {
       printf("Hex = %s \n",outline);
     }
@@ -313,11 +317,15 @@ void SerialGetAll(HANDLE *hComm) {
 }
 
 void SerialGetArray(HANDLE *hComm,float number_array[],int num) {
-  SerialGetArray(hComm,number_array,num,1);
+  SerialGetArray(hComm,number_array,num,0);
 }
 
 void SerialGetArray(HANDLE *hComm,float number_array[],int num,int echo) {
   union inparser inputvar;
+  std::ofstream myfile;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'a');
   for (int d = 0;d<num;d++) {
     int i = 0;
     char inLine[MAXLINE];
@@ -329,10 +337,11 @@ void SerialGetArray(HANDLE *hComm,float number_array[],int num,int echo) {
       do {
         inchar = SerialGetc(hComm);
       } while (inchar == '\0');
-      if (echo) {
+     if (echo) {
       printf("Receiving: i = %d char = %c chartoint = %d \n",i,inchar,int(inchar));
       }
       inLine[i++] = inchar;
+
     } while ((inchar != '\r') && (i<MAXLINE));
     if (echo) {
       printf("Response received \n");
@@ -343,7 +352,7 @@ void SerialGetArray(HANDLE *hComm,float number_array[],int num,int echo) {
 
     // Now Convert from ASCII to HEXSTRING to FLOAT
     if (echo) {
-      printf("Converting to Float \n");
+      //printf("Converting to Float \n");
     }
     inputvar.inversion = 0;
     for(i=2;i<10;i++){
@@ -358,7 +367,10 @@ void SerialGetArray(HANDLE *hComm,float number_array[],int num,int echo) {
       printf(" \n");
     }
     number_array[d] = inputvar.floatversion;
+    printf("Integer Received T_%d = %lf \n",(d+1),number_array[d]);
   }
+  bool write_csv= writecsv("temp_sensor_v.csv",number_array[1],number_array[2],number_array[3],number_array[4],number_array[5],number_array[6],number_array[7]);
+  sleep(1);
 }
 
 void SerialPutHello(HANDLE *hComm,int echo) {
@@ -439,6 +451,13 @@ int SerialListen(HANDLE *hComm,int echo) {
   return ok;
 }
 
+bool writecsv(char filename[], float field_1, float field_2, float field_3, float field_4, float field_5, float field_6, float field_7) 
+{
+std::ofstream file;
+file.open(filename, std::ios_base::app);
+file<< field_1 << ","<<field_2 << "," <<field_3<<"," <<field_4<<"," <<field_5<<"," <<field_6<<"," <<field_7<< std::endl;
+return true;
+}   
 void SerialDebug(HANDLE *hComm) {
   char inchar;
   inchar = SerialGetc(hComm);

@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include "Serial.h"
 #include <stdio.h>
+#include <fstream>
+#include <cstdio>
 
 ////////////////////////DESKTOP COMPUTER///////////////////////////////////
 int main() {
@@ -28,19 +30,64 @@ int main() {
 	//Consume w\r\n
 	//SerialGetHello(&my,1);
     
-	SerialPutc(&my,'1');
-    for (int i = 0;i<2;i++) {
-	int echo;
-	int err = 0;
-    char inchar;
-    inchar = SerialGetc(&my);
-    int val = int(inchar);
-      //  err+=val;
-       // if (echo) {
-    printf("%c \n",inchar);
-	//printf("val%d \n",val);
-      //  }
-	}
+	//SerialPutc(&my,'1');
+    //for (int i = 0;i<2;i++) {
+	//int echo;
+	//int err = 0;
+    //char inchar;
+    //inchar = SerialGetc(&my);
+    //int val = int(inchar);
+    //  //  err+=val;
+    //   // if (echo) {
+    //printf("%c \n",inchar);
+	////printf("val%d \n",val);
+    //  //  }
+
+    //Send w\r to Arduino
+	//SerialPutHello(&my,1);
+
+	//Consume w\r\n
+	//SerialGetHello(&my,1);
+
+	//Create fictitious float
+	float number1 = 0;
+	float number2 = 4.5;
+	float number3 = 2.4;
+	float number4 = 9.8;
+	float number5 = -2.8;
+	float number6 = 0.3;
+	float number_array[MAXFLOATS]; //MAXFLOATS is set to 10 in Serial.h right now
+	number_array[0] = number1;
+	number_array[1] = number2;
+	number_array[2] = number3;
+	number_array[3] = number4;
+	number_array[4] = number5;
+	number_array[5] = number6;
+	int number_of_numbers = 6;
+
+	//Send to Arduino
+	//SerialPutArray(&my,number_array,number_of_numbers);
+
+	//Read everything (just for debugging)
+	//SerialGetAll(&my);
+	char filename[] = "temp_sensor_v.csv";
+	remove(filename);
+
+
+	do {
+    //SerialPutc(&my,'w');
+	//Now Read from Arduino
+	float rec_number_array[MAXFLOATS];
+	int number_of_rec_numbers = 7;
+	SerialGetArray(&my,rec_number_array,number_of_rec_numbers);
+	}while(1);
+	//Extract Data
+	float rec_number = 0;
+	//for (int i = 0;i<number_of_rec_numbers;i++) {
+	//	rec_number = rec_number_array[i];	
+	//	printf("Number Received = %lf \n",rec_number);
+	//}
+	//}
 	
 
 } //end main loop desktop computer

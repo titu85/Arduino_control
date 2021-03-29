@@ -106,6 +106,7 @@ int SerialListen(HANDLE *hComm);
 //Serial respond then sends hello, sir (w\r\n)
 void SerialRespond(HANDLE *hComm,int echo);
 void SerialRespond(HANDLE *hComm);
+bool writecsv(char filename[10], float field_1, float field_2, float field_3, float field_4, float field_5, float field_6, float field_7);
 
 //Now let's assume you are the ground station and you are saying hello and then
 //listening for the response from the drne.
