@@ -11,7 +11,7 @@ HANDLE my;
 //Call this for defaults
 void InitSerialPort(void)
 {
-  // VERY IMPORTANT: Edit this line of code to designate which COM port the ADCS board is using!!
+  //Edit this line of code to designate which COM port the arduino board is using!!
   int BaudRate = 115200;
   #ifdef __WIN32__
     char *port = "\\\\.\\COM12";
@@ -41,58 +41,12 @@ HANDLE SerialInit(char *ComPortName, int BaudRate)
   return hComm;
   #endif
   
-  //Setup for Windows
-  #ifdef __WIN32__  
-  hComm = CreateFile(ComPortName,
- 	GENERIC_READ | GENERIC_WRITE,
-        0, // exclusive access
-        NULL, // no security
-        OPEN_EXISTING,
-        0, // no overlapped I/O
-        NULL); // null template 
-    //printf("x0 hComm=0x%08x GetLastError=%d\r\n",hComm,GetLastError());
-  bPortReady = SetupComm(hComm, 128, 128); // set buffer sizes
-  //printf("x1 PortReady=%d GetLastError=%d\r\n",bPortReady,GetLastError());
-  bPortReady = GetCommState(hComm, &dcb);
-  // printf("x2 PortReady=%d\r\n",bPortReady);
-  dcb.BaudRate = BaudRate;
-  dcb.ByteSize = 8;
-  dcb.Parity = NOPARITY;
-  //dcb.Parity = EVENPARITY;
-  dcb.StopBits = ONESTOPBIT;
-  dcb.fAbortOnError = TRUE;
- 
-  // set XON/XOFF
-  dcb.fOutX = FALSE;                    // XON/XOFF off for transmit
-  dcb.fInX    = FALSE;                    // XON/XOFF off for receive
-  // set RTSCTS
-  dcb.fOutxCtsFlow = FALSE;                    // turn on CTS flow control
-  dcb.fRtsControl = RTS_CONTROL_DISABLE;    // 
-  // set DSRDTR
-  dcb.fOutxDsrFlow = FALSE;                    // turn on DSR flow control
-  //dcb.fDtrControl = DTR_CONTROL_ENABLE;    // 
-  dcb.fDtrControl = DTR_CONTROL_DISABLE;    // 
-  //dcb.fDtrControl = DTR_CONTROL_HANDSHAKE;    // 
-  bPortReady = SetCommState(hComm, &dcb);
-  //printf("x3 PortReady=%d\r\n",bPortReady);
-  // Communication timeouts are optional
-  bPortReady = GetCommTimeouts (hComm, &CommTimeouts);
-  //printf("x4 PortReady=%d\r\n",bPortReady);
-  CommTimeouts.ReadIntervalTimeout = 5;
-  CommTimeouts.ReadTotalTimeoutConstant = 5;
-  CommTimeouts.ReadTotalTimeoutMultiplier = 1;
-  CommTimeouts.WriteTotalTimeoutConstant = 5;
-  CommTimeouts.WriteTotalTimeoutMultiplier = 1;
-
-  bPortReady = SetCommTimeouts (hComm, &CommTimeouts);
-  //printf("x5 PortReady=%d\r\n",bPortReady);
-  #endif
-
+  
   //On linux you need to open the tty port
   #if defined __linux__ || __APPLE__
   printf("Opening Com Port on Linux \n");
   hComm = open(ComPortName,  O_RDWR | O_NOCTTY);
-  // Create new termios struc, we call it 'tty' for convention
+  // Create new termios struc, and call it 'tty' for convention
   struct termios tty;
   memset(&tty, 0, sizeof tty);
   // Read in existing settings, and handle any error
@@ -147,14 +101,7 @@ char SerialGetc(HANDLE *hComm)
   return rxchar;
   #else
   
-  #ifdef __WIN32__
-    bool bReadRC;
-    static DWORD iBytesRead;
-    do {
-      bReadRC = ReadFile(*hComm, &rxchar, 1, &iBytesRead, NULL);
-    } while (iBytesRead==0);
-    return rxchar;
-  #endif
+  
   #if defined __linux__ || __APPLE__
     // Allocate memory for read buffer, set size according to your needs
     memset(&rxchar, '\0', sizeof(rxchar));
@@ -167,10 +114,6 @@ char SerialGetc(HANDLE *hComm)
       //printf("Error reading: %s", strerror(errno));
       rxchar = '\0';
     }
-    // Here we assume we received ASCII data, but you might be sending raw bytes (in that case, don't try and
-    // print it to the screen like this!)
-    //printf("Read %i bytes. Received message: %s", num_bytes, read_buf);
-    //printf("Read %i bytes, rxchar = %c, ASCII = %d ",num_bytes,rxchar,int(rxchar));
     return rxchar;
   #endif
 
@@ -185,12 +128,7 @@ void SerialPutc(HANDLE *hComm, char txchar)
   fflush(stdout);
   return;
   #endif
-  #ifdef __WIN32__
-  BOOL bWriteRC;
-  static DWORD iBytesWritten;
-  bWriteRC = WriteFile(*hComm, &txchar, 1, &iBytesWritten,NULL);
-  return;
-  #endif
+  
   #if defined __linux__ || __APPLE__
   // Write to serial port
   write(*hComm,&txchar,sizeof(txchar));
@@ -198,129 +136,13 @@ void SerialPutc(HANDLE *hComm, char txchar)
   #endif
 }
 
-void SerialPutString(HANDLE *hComm, char *string,int len) {
-  char outchar;
-  outchar = *string++;
-  for (int idx = 0;idx<len;idx++){
-    SerialPutc(hComm,outchar);
-    //printf("%c",outchar);
-    outchar = *string++;
-  }
+
+
+void Get_temp_sensor_V(HANDLE *hComm,float number_array[],int num) {
+  Get_temp_sensor_V(hComm,number_array,num,0);
 }
 
-void SerialPutString(HANDLE *hComm, char *string)
-{
-  char outchar;
-  outchar = *string++;
-  //This while loop. Does it always break?
-  //I would rather have a for loop
-  //I would rather have an input to the code be the length of
-  //the string so we just use a for loop
-  //The routine above is overloaded with length as an input
-  while (outchar!=NULL){ 
-    SerialPutc(hComm,outchar);
-    //printf("%c",outchar);
-    outchar = *string++;
-  }
-}
-
-void SerialSendArray(HANDLE *hComm,float number_array[],int num) {
-  SerialSendArray(hComm,number_array,num,1);
-}
-
-void SerialSendArray(HANDLE *hComm,float number_array[],int num,int echo) {
-  union inparser inputvar;
-  char outline[20];
-  for (int i = 0;i<num;i++) {
-    inputvar.floatversion = number_array[i];
-    int int_var = inputvar.inversion;
-    if (echo) {
-      printf("Sending = %lf %d \n",number_array[i],int_var);
-    }
-    sprintf(outline,"H:%08x ",int_var);
-    if (echo) {
-      printf("Hex = %s \n",outline);
-    }
-    //This routine uses a while loop until it hits a NULL char
-    //SerialPutSrting(hComm,outline);
-    //This routine uses a for loop
-    SerialPutString(hComm,outline,11); //The 11 here is the number of characters in the string
-    //H: - 2 chars
-    //followed by 8 hex chars
-    //followed by a space - 1
-    //11 total
-    //Send a slash r after every number
-    SerialPutc(hComm,'\r');
-  }
-  if (echo) {
-    printf("Numbers Sent \n");
-  }
-}
-
-///////////This is really annoying but when this Serial library was first written, the desktop
-////side would send 3 hex numbers at a time and then a \r at the end. The board would then
-///respond with 1 hex number at a time with \r at the end. Because of that the SerialPutArray is
-///for the desktop to send an array where 3 numbers are followed by \r
-///the SerialSendArray is literally the exact same code but it sends 1 number at a time with \r
-///at the end. In my opinion, it would be better to send 1 hex number and then \r back and forth
-///that way there's no confusion on which routine to use. Problem is that MultiSAT++/HIL is using
-//the 3 hex \r format and the RPI Groundstation is using 1 hex \r format. In an effort to not break
-//other people's code I have kept SerialPutArray and SerialSendArray. If we can ever get the MultiSAT
-//and HIL members in the room together and have a coding party I suggest we change everything to 1 hex \r
-//format but for now we will leave this here. CMontalvo 10/13/2020 (This was a Tuesday. Not a Friday)
-
-void SerialPutArray(HANDLE *hComm,float number_array[],int num) {
-  SerialPutArray(hComm,number_array,num,1);
-}
-
-void SerialPutArray(HANDLE *hComm,float number_array[],int num,int echo) {
-  union inparser inputvar;
-  char outline[20];
-  int slashr = 0;
-  for (int i = 0;i<num;i++) {
-    inputvar.floatversion = number_array[i];
-    int int_var = inputvar.inversion;
-    if (echo) {
-      printf("Sending = %lf %d \n",number_array[i],int_var);
-    }
-    sprintf(outline,"H:%08x \0",int_var);
-    if (echo) {
-      printf("Hex = %s \n",outline);
-    }
-    SerialPutString(hComm,outline);
-    slashr++;
-    //Send a slash r after every 3rd set of numbers
-    if (slashr == 3) {
-      SerialPutc(hComm,'\r');
-      slashr=0;
-    }
-  }
-  if (echo) {
-    printf("Numbers Sent \n");
-  }
-}
-
-//This function will just read everything from the Serial monitor and print it to screen
-void SerialGetAll(HANDLE *hComm) {
-  char inchar = '\0';
-  printf("Waiting for characters \n");
-  int i = 0;
-  do {
-    do {
-      inchar = SerialGetc(hComm);
-      //printf("i = %d inchar = %c chartoint = %d \n",i,inchar,int(inchar));
-    } while (inchar == '\0');
-    printf("Receiving: i = %d char = %c chartoint = %d \n",i,inchar,int(inchar));
-    i++;
-  } while ((i<MAXLINE));
-  printf("Response received \n");
-}
-
-void SerialGetArray(HANDLE *hComm,float number_array[],int num) {
-  SerialGetArray(hComm,number_array,num,0);
-}
-
-void SerialGetArray(HANDLE *hComm,float number_array[],int num,int echo) {
+void Get_temp_sensor_V(HANDLE *hComm,float number_array[],int num,int echo) {
   union inparser inputvar;
   std::ofstream myfile;
   SerialPutc(hComm,'w');
@@ -349,7 +171,7 @@ void SerialGetArray(HANDLE *hComm,float number_array[],int num,int echo) {
 
     // Format from Arduino:
     // H:nnnnnnnn 
-
+    // voltage(float) is coverted to ASCII at arduino side and transmitted as char
     // Now Convert from ASCII to HEXSTRING to FLOAT
     if (echo) {
       //printf("Converting to Float \n");
@@ -367,135 +189,245 @@ void SerialGetArray(HANDLE *hComm,float number_array[],int num,int echo) {
       printf(" \n");
     }
     number_array[d] = inputvar.floatversion;
-    printf("Integer Received T_%d = %lf \n",(d+1),number_array[d]);
+    printf("Temperature sensor voltage(V) T_%d = %lf \n",(d),number_array[d]);
   }
-  bool write_csv= writecsv("temp_sensor_v.csv",number_array[1],number_array[2],number_array[3],number_array[4],number_array[5],number_array[6],number_array[7]);
-  sleep(1);
+  //voltage from 7 sensors is saved as .csv file 
+  bool write_csv= writecsv("temp_sensor_v.csv",number_array[0],number_array[1],number_array[2],number_array[3],number_array[4],number_array[5],number_array[6]);
+  sleep(.3);
 }
 
-void SerialPutHello(HANDLE *hComm,int echo) {
-  if (echo) {
-    printf("Sending w slash r \n");
-  }
+
+void Antenna_to_ADC(HANDLE *hComm) {
+  char inchar;
   SerialPutc(hComm,'w');
-  SerialPutc(hComm,'\r');
-  if (echo) {
-    printf("Sent \n");
-  }
-}
-
-int SerialGetHello(HANDLE *hComm,int echo) {
-  //Consume w\r\n
-  if (echo) {
-    printf("Reading the Serial Buffer for w slash r slash n \n");
-  }
-  char inchar;
-  int err = 0;
-  for (int i = 0;i<3;i++) {
-    inchar = SerialGetc(hComm);
-    int val = int(inchar);
-    err+=val;
-    if (echo) {
-      printf("%d \n",val);
-    }
-  }
-  return err;
-}
-
-int SerialListen(HANDLE *hComm) {
-  return SerialListen(hComm,1); //default to having echo on
-}
-
-int SerialListen(HANDLE *hComm,int echo) {
-  //Listen implies that this is a drone/UAV/robot that is simply
-  //listening on the airwaves for anyone sending out w \r
-  //Listen w\r
-  
-  ///////////////THIS WORKS DO NOT TOUCH (RPI ONLY)
-  /* char dat;
-  if(serialDataAvail(*hComm))
-    {
-      dat = serialGetchar(*hComm);
-      printf("char = %c int(char) = %d \n", dat,int(dat));
-    }
-    return 0;*/
-  ///////////////////////////////////////
-
-  int ok = 0;
-  char inchar;
+  sleep(.1);
+  SerialPutc(hComm,'b');
+  //do{
   inchar = SerialGetc(hComm);
-  int val = int(inchar);
-  if ((echo) && (val > 0) && (val < 255)) {
-    printf("SerialListen => char = %c int(char) = %d \n", inchar,val);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='b'){
+  printf("External antenna connected to Digitizer \n");
   }
-  
-  if (val == 119) { //That's a w!
-    ok += 119;
-    //If we received a w we need to read say 10 times and see if we get a \r
-    //remember that \r is a 13 in ASCII and \n is 10 in ASCII
-    inchar = SerialGetc(hComm);
-    val = int(inchar);
-    //If we received a 13 or reach max we will break out of this loop
-    //There is nothing more we need to do so we will just print val
-    //to the screen
-    if ((echo) && (val == 13)){
-      printf("Slash R Received!!!! \n");
-    }
-    if (echo) {
-      printf("Character Received = %c ASCII Code = %d \n",inchar,val);
-    }
-    //and then increment ok
-    ok+=val;
-  }
-//either way we shall return ok
-  return ok;
+  return;
 }
 
+void Short_to_ADC(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'c');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='c'){
+  printf("Short connected to Digitizer \n");
+  }
+  return;
+}
+
+void Open_to_ADC(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'d');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='d'){
+  printf("Open connected to Digitizer \n");
+  }
+  return;
+}
+
+void Match_to_ADC(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'e');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='e'){
+  printf("Match connected to Digitizer \n");
+  }
+  return;
+}
+
+void Hot_ambient_to_ADC(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'f');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='f'){
+  printf("Match connected to Digitizer \n");
+  }
+  return;
+}
+
+void Cable_to_ADC(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'g');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='g'){
+  printf("Cable connected to Digitizer \n");
+  }
+  return;
+}
+
+void Noise_to_ADC(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'h');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='h'){
+  printf("Noise connected to Digitizer \n");
+  }
+  return;
+}
+
+void VNA_to_ADC(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'i');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='i'){
+  printf("VNA connected to Digitizer \n");
+  }
+  return;
+}
+
+void Antenna_to_VNA(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'j');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='j'){
+  printf("Antenna connected to VNA \n");
+  }
+  return;
+}
+
+void Short_to_VNA(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'k');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='k'){
+  printf("Short connected to VNA \n");
+  }
+  return;
+}
+
+void Open_to_VNA(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'l');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='l'){
+  printf("Open connected to VNA \n");
+  }
+  return;
+}
+
+void Match_to_VNA(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'m');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='m'){
+  printf("Match connected to VNA \n");
+  }
+  return;
+}
+
+void Hot_Ambient_to_VNA(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'n');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='n'){
+  printf("Hot_ambient load connected to VNA \n");
+  }
+  return;
+}
+
+void Cable_to_VNA(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'o');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='o'){
+  printf("Cable connected to VNA \n");
+  }
+  return;
+}
+
+void Noise_to_VNA(HANDLE *hComm) {
+  char inchar;
+  SerialPutc(hComm,'w');
+  sleep(.1);
+  SerialPutc(hComm,'p');
+  //do{
+  inchar = SerialGetc(hComm);
+  //}while(inchar!='r');
+  //printf("inchar received = %d \n", inchar);
+  if (inchar=='p'){
+  printf("Noise connected to VNA \n");
+  }
+  return;
+}
+
+
+// write temperature sensor data from arduino to .csv file
 bool writecsv(char filename[], float field_1, float field_2, float field_3, float field_4, float field_5, float field_6, float field_7) 
 {
 std::ofstream file;
 file.open(filename, std::ios_base::app);
 file<< field_1 << ","<<field_2 << "," <<field_3<<"," <<field_4<<"," <<field_5<<"," <<field_6<<"," <<field_7<< std::endl;
 return true;
-}   
-void SerialDebug(HANDLE *hComm) {
-  char inchar;
-  inchar = SerialGetc(hComm);
-  int val = int(inchar);
-  printf("Character Received = %c ASCII Code = %d \n",inchar,val);
-}
-
-void SerialRespond(HANDLE *hComm) {
-  //overloaded function just calls the echo on version by default
-  SerialRespond(hComm,1);
-}
-
-//Responding is very much like SerialPutHello except this is
-//board side so this implies that a drone/uav/robot is responding
-//to a groundstation computer saying hi.
-//the response to hello (w\r) is hello, sir (w\r\n)
-void SerialRespond(HANDLE *hComm,int echo) {
-
-  /* THIS WORKS DO NOT TOUCH (RPI ONLY)
-  char dat;
-  dat = 'w';
-  printf("Sending char %c \n",dat);
-  serialPutchar(my, dat);
-  dat = '\r';
-  printf("Sending char %c \n",dat);
-  serialPutchar(my, dat);
-  dat = '\n';
-  printf("Sending char %c \n",dat);
-  serialPutchar(my, dat);
-  */
-  
-  if (echo) {
-    printf("Sending w slash r slash n \n");
-  }
-  SerialPutc(hComm,'w');
-  SerialPutc(hComm,'\r');
-  SerialPutc(hComm,'\n');
-  if (echo) {
-    printf("Sent \n");
-  }
-}
+}  

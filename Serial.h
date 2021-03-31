@@ -86,51 +86,53 @@ HANDLE SerialInit(char *ComPortName, int BaudRate);
 char SerialGetc(HANDLE *hComm);
 void SerialPutc(HANDLE *hComm, char txchar);
 
+
+void Antenna_to_ADC(HANDLE *hComm);
+void Short_to_ADC(HANDLE *hComm);
+void Open_to_ADC(HANDLE *hComm);
+void Hot_ambient_to_ADC(HANDLE *hComm);
+void Cable_to_ADC(HANDLE *hComm);
+void Noise_to_ADC(HANDLE *hComm);
+void VNA_to_ADC(HANDLE *hComm);
+void Antenna_to_VNA(HANDLE *hComm);
+void Short_to_VNA(HANDLE *hComm);
+void Open_to_VNA(HANDLE *hComm);
+void Match_to_VNA(HANDLE *hComm);
+void Hot_Ambient_to_VNA(HANDLE *hComm);
+void Cable_to_VNA(HANDLE *hComm);
+void Noise_to_VNA(HANDLE *hComm);
+
+
+
+
 //This sends a string rather than 1 character
-void SerialPutString(HANDLE *hComm, char *string);
-//this is an overloaded function that uses a for loop instead of a while loop
-void SerialPutString(HANDLE *hComm, char *string,int len); 
+
 
 //This routine reads 1 character and prints to the screen what you received
-void SerialDebug(HANDLE *hComm);
+
 //This routine reads everything from serial and prints it to screen. not just 1 character
-void SerialGetAll(HANDLE *hComm);
 
 //This is where things get confusing
 
 ///Let's assume you have a drone that is constantly listening to a ground station and then
 //responding to the groundstation if it receives a "hello" (w\r)
 //In this case SerialListen is listening for w\r
-int SerialListen(HANDLE *hComm,int echo);
-int SerialListen(HANDLE *hComm);
-//Serial respond then sends hello, sir (w\r\n)
-void SerialRespond(HANDLE *hComm,int echo);
-void SerialRespond(HANDLE *hComm);
-bool writecsv(char filename[10], float field_1, float field_2, float field_3, float field_4, float field_5, float field_6, float field_7);
 
-//Now let's assume you are the ground station and you are saying hello and then
-//listening for the response from the drne.
-//In this case you need SerialPutHello (w\r)
-void SerialPutHello(HANDLE *hComm,int echo);
-//and then get the response from the drone or whatever (w\r\n)
-int SerialGetHello(HANDLE *hComm,int echo);
-//So basically SerialPutHello and SerialRepond are different because SerialPutHello send w\r
-//and SerialRespond sends w\r\n which is fucking annoying because if we just sent w\r both ways
-//we wouldn't need both of these functions
+//Serial respond then sends hello, sir (w\r\n)
+
+bool writecsv(char filename[], float field_1, float field_2, float field_3, float field_4, float field_5, float field_6, float field_7);
+
 
 ////Ok then SerialPutArray sends an entire array to a board but uses the format
 //put 3 Hex numbers followed by a \r
-void SerialPutArray(HANDLE *hComm,float array[],int num);
-void SerialPutArray(HANDLE *hComm,float array[],int num,int echo);
 //SerialGetArray though assumes the numbers are being received in the format 1 hex number \r
-void SerialGetArray(HANDLE *hComm,float array[],int num);
-void SerialGetArray(HANDLE *hComm,float array[],int num,int echo);
+void Get_temp_sensor_V(HANDLE *hComm,float array[],int num);
+void Get_temp_sensor_V(HANDLE *hComm,float array[],int num,int echo);
 //Again this is so fucking annoying because since we have 3 hex \r and 1 hex \r we now need
 //different routines for a drone
 
 //So this routine here sends an array in the 1 Hex \r format
-void SerialSendArray(HANDLE *hComm,float array[],int num);
-void SerialSendArray(HANDLE *hComm,float array[],int num,int echo);
+
 //You might be wondering where the read 3 hex \r format function and well I've never needed it
 //Right now the MultiSAT++/HIL simulation uses SerialPutArray to send 3 Hex \r to an Arduino.
 //The SerialReadArray which read 3 Hex \r is actually currently in a *.ino function. Ugh.
