@@ -101,6 +101,7 @@ void Match_to_VNA(HANDLE *hComm);
 void Hot_Ambient_to_VNA(HANDLE *hComm);
 void Cable_to_VNA(HANDLE *hComm);
 void Noise_to_VNA(HANDLE *hComm);
+void Match_to_ADC(HANDLE *hComm);
 
 
 
